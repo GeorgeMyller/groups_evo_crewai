@@ -1,0 +1,1 @@
+[2025-02-19 21:59:30.847408] [INFO] [GRUPO: Postagem Instagram GeorgeMyller] [GROUP_ID: 120363398170141701@g.us] - Mensagem: Resumo gerado e enviado com sucesso![2025-02-19 22:00:53.384061] [INFO] [GRUPO: Postagem Instagram AcessoIA] [GROUP_ID: 120363383673368986@g.us] - Mensagem: Resumo gerado e enviado com sucesso!

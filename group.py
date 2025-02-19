@@ -1,4 +1,14 @@
-# group.py
+"""
+Classe de Modelo para Grupos de WhatsApp / WhatsApp Group Model Class
+
+PT-BR:
+Esta classe representa um grupo do WhatsApp com suas propriedades e configurações
+para geração de resumos automáticos.
+
+EN:
+This class represents a WhatsApp group with its properties and settings
+for automatic summary generation.
+"""
 
 class Group:
     def __init__(self,
@@ -20,25 +30,49 @@ class Group:
                  is_links=False,
                  is_names=False):
         """
-        Inicializa um grupo com todas as propriedades relevantes e as configurações de resumo.
+        PT-BR:
+        Inicializa um grupo com suas propriedades e configurações de resumo.
 
-        :param group_id: ID único do grupo.
-        :param name: Nome do grupo.
-        :param subject_owner: Dono do assunto/título do grupo.
-        :param subject_time: Timestamp da última alteração do título.
-        :param picture_url: URL da imagem do grupo.
-        :param size: Tamanho do grupo (número de participantes).
-        :param creation: Timestamp da criação do grupo.
-        :param owner: Dono do grupo.
-        :param restrict: Indica se o grupo tem restrições.
-        :param announce: Indica se o grupo está em modo "somente administrador".
-        :param is_community: Indica se o grupo é uma comunidade.
-        :param is_community_announce: Indica se é um grupo de anúncios de uma comunidade.
-        :param dias: Quantidade de dias para o resumo (valor padrão: 1).
-        :param horario: Horário de execução do resumo (valor padrão: "22:00").
-        :param enabled: Indica se o resumo está habilitado (valor padrão: False).
-        :param is_links: Indica se links estão incluídos no resumo (valor padrão: False).
-        :param is_names: Indica se nomes estão incluídos no resumo (valor padrão: False).
+        Parâmetros:
+            group_id: ID único do grupo
+            name: Nome do grupo
+            subject_owner: Responsável pelo título do grupo
+            subject_time: Momento da última alteração do título
+            picture_url: URL da imagem do grupo
+            size: Número de participantes
+            creation: Data de criação
+            owner: Administrador principal
+            restrict: Indica se possui restrições
+            announce: Modo somente administrador
+            is_community: Se é uma comunidade
+            is_community_announce: Se é grupo de anúncios
+            dias: Período do resumo (padrão: 1)
+            horario: Horário do resumo (padrão: "22:00")
+            enabled: Resumo ativado (padrão: False)
+            is_links: Incluir links (padrão: False)
+            is_names: Incluir nomes (padrão: False)
+
+        EN:
+        Initializes a group with its properties and summary settings.
+
+        Parameters:
+            group_id: Unique group ID
+            name: Group name
+            subject_owner: Group title owner
+            subject_time: Last title change timestamp
+            picture_url: Group image URL
+            size: Number of participants
+            creation: Creation date
+            owner: Main administrator
+            restrict: Has restrictions
+            announce: Admin-only mode
+            is_community: Is a community
+            is_community_announce: Is announcement group
+            dias: Summary period (default: 1)
+            horario: Summary time (default: "22:00")
+            enabled: Summary enabled (default: False)
+            is_links: Include links (default: False)
+            is_names: Include names (default: False)
         """
         self.group_id = group_id
         self.name = name
@@ -52,8 +86,7 @@ class Group:
         self.announce = announce
         self.is_community = is_community
         self.is_community_announce = is_community_announce
-
-        # Configurações de resumo
+        # Summary settings / Configurações de resumo
         self.dias = dias
         self.horario = horario
         self.enabled = enabled
@@ -62,7 +95,11 @@ class Group:
 
     def __repr__(self):
         """
-        Retorna uma representação legível do grupo.
+        PT-BR:
+        Retorna uma representação textual do grupo.
+        
+        EN:
+        Returns a string representation of the group.
         """
         return (
             f"Group(id={self.group_id}, subject={self.name}, owner={self.owner}, size={self.size})"

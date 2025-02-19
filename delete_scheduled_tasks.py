@@ -1,76 +1,112 @@
-import pandas as pd  # Biblioteca para manipulação de dados em tabelas
-from group_controller import GroupController  # Permite acessar os grupos e suas informações
-from task_scheduler import TaskScheduled  # Gerencia o agendamento e remoção de tarefas do sistema
-import sys  
+"""
+Sistema de Remoção de Tarefas Agendadas / Scheduled Tasks Removal System
+
+PT-BR:
+Este módulo fornece funcionalidades para listar e remover tarefas agendadas do sistema.
+Permite a visualização e gerenciamento de grupos através de uma interface de linha de comando.
+
+EN:
+This module provides functionality to list and remove scheduled tasks from the system.
+Allows viewing and managing groups through a command-line interface.
+"""
+
+import pandas as pd
+from group_controller import GroupController
+from task_scheduler import TaskScheduled
+import sys
 
 
 def list_groups():
-    """Exibe na tela todos os grupos agendados, facilitando a escolha para remoção."""
-    # Lê as informações do arquivo CSV que contém o resumo dos grupos
+    """
+    PT-BR:
+    Lista todos os grupos agendados no sistema com suas respectivas informações.
+    
+    Retorna:
+        DataFrame: Contém as informações dos grupos agendados do arquivo CSV.
+    
+    EN:
+    Lists all scheduled groups in the system with their respective information.
+    
+    Returns:
+        DataFrame: Contains scheduled groups information from the CSV file.
+    """
     df = pd.read_csv("group_summary.csv")
-    control = GroupController()  # Cria instância do controlador para acessar os grupos via API
+    control = GroupController()
     groups = control.fetch_groups()
-    # Cria um dicionário mapeando o ID do grupo para seu nome para facilitar a identificação
     group_dict = {group.group_id: group.name for group in groups}
     
-    print("\n=== GRUPOS DISPONÍVEIS ===\n")
-    # Itera sobre os grupos do CSV e exibe com numeração
+    print("\n=== GRUPOS DISPONÍVEIS / AVAILABLE GROUPS ===\n")
     for i, (group_id, _) in enumerate(df.iterrows(), 1):
         group_id = df.iloc[i-1]['group_id']
-        group_name = group_dict.get(group_id, "Nome não encontrado")
+        group_name = group_dict.get(group_id, "Nome não encontrado / Name not found")
         print(f"{i}. {group_name} (ID: {group_id})")
     
-    return df  
+    return df
 
 
 def delete_scheduled_group(group_id):
-    """Remove um grupo agendado:
-    1. Lê o CSV com as configurações dos grupos;
-    2. Verifica se o grupo existe;
-    3. Remove a tarefa agendada do sistema;
-    4. Atualiza o CSV removendo o grupo."""
+    """
+    PT-BR:
+    Remove um grupo agendado do sistema e do arquivo de configuração.
+    
+    Argumentos:
+        group_id: ID do grupo a ser removido
+    
+    Retorna:
+        bool: True se a remoção foi bem-sucedida, False caso contrário
+    
+    EN:
+    Removes a scheduled group from both system and configuration file.
+    
+    Args:
+        group_id: ID of the group to be removed
+    
+    Returns:
+        bool: True if removal was successful, False otherwise
+    """
     try:
-        # Lê o arquivo CSV contendo os agendamentos
         df = pd.read_csv("group_summary.csv")
         
-        # Verifica se o ID passado existe no CSV
         if group_id not in df['group_id'].values:
-            print(f"Grupo com ID {group_id} não encontrado!")
+            print(f"Grupo não encontrado / Group not found: ID {group_id}")
             return False
         
-        # Define o nome da tarefa agendada baseado no ID do grupo
         task_name = f"ResumoGrupo_{group_id}"
         try:
-            # Tenta remover a tarefa agendada do sistema
             TaskScheduled.delete_task(task_name)
-            print(f"Tarefa {task_name} removida do sistema")
+            print(f"Tarefa removida do sistema / Task removed from system: {task_name}")
         except Exception as e:
-            # Caso não seja possível remover, exibe uma mensagem de aviso
-            print(f"Aviso: Não foi possível remover a tarefa do sistema: {e}")
+            print(f"Aviso / Warning: Não foi possível remover a tarefa / Could not remove task: {e}")
         
-        # Remove o grupo do DataFrame e salva a atualização no CSV
         df = df[df['group_id'] != group_id]
         df.to_csv("group_summary.csv", index=False)
-        print("Grupo removido do arquivo de configuração")
+        print("Grupo removido do arquivo de configuração / Group removed from configuration file")
         
         return True
         
     except Exception as e:
-        # Em caso de erro, exibe a mensagem e retorna False
-        print(f"Erro ao remover grupo: {e}")
+        print(f"Erro ao remover grupo / Error removing group: {e}")
         return False
 
 
 def main():
-    """Função principal do script, fornecendo uma interface de linha de comando para remover grupos agendados."""
+    """
+    PT-BR:
+    Função principal que implementa a interface de linha de comando para
+    gerenciamento e remoção de grupos agendados.
+    
+    EN:
+    Main function that implements the command-line interface for
+    managing and removing scheduled groups.
+    """
     while True:
         try:
-            df = list_groups()  # Chama a função para listar os grupos disponíveis
+            df = list_groups()
             if df.empty:
-                print("Não há grupos agendados para remover.")
+                print("Não há grupos agendados para remover. / No scheduled groups to remove.")
                 break
                 
-            print("\nEscolha o número do grupo para remover (ou 'q' para sair):")
+            print("\nEscolha o número do grupo para remover (ou 'q' para sair) / Choose group number to remove (or 'q' to quit):")
             choice = input().strip()
             
             if choice.lower() == 'q':
@@ -81,28 +117,28 @@ def main():
                 if 0 <= index < len(df):
                     group_id = df.iloc[index]['group_id']
                     control = GroupController()
-                    group = control.find_group_by_id(group_id)  # Procura o grupo pelo ID
+                    group = control.find_group_by_id(group_id)
                     
                     if group:
-                        print(f"\nVocê escolheu remover:")
-                        print(f"Grupo: {group.name}")
+                        print(f"\nVocê escolheu remover / You chose to remove:")
+                        print(f"Grupo / Group: {group.name}")
                         print(f"ID: {group_id}")
-                        confirm = input("\nConfirma a remoção? (s/n): ").strip().lower()
+                        confirm = input("\nConfirma a remoção? / Confirm removal? (s/n): ").strip().lower()
                         
                         if confirm == 's':
                             if delete_scheduled_group(group_id):
-                                print("Grupo removido com sucesso!")
+                                print("Grupo removido com sucesso! / Group successfully removed!")
                             else:
-                                print("Falha ao remover o grupo.")
+                                print("Falha ao remover o grupo. / Failed to remove group.")
                     else:
-                        print("Grupo não encontrado no sistema.")
+                        print("Grupo não encontrado no sistema. / Group not found in system.")
                 else:
-                    print("Número inválido!")
+                    print("Número inválido! / Invalid number!")
             except ValueError:
-                print("Por favor, digite um número válido!")
+                print("Por favor, digite um número válido! / Please enter a valid number!")
                 
         except Exception as e:
-            print(f"Erro: {e}")
+            print(f"Erro / Error: {e}")
             break
 
 

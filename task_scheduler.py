@@ -1,3 +1,17 @@
+"""
+Sistema de Agendamento de Tarefas Multiplataforma / Cross-platform Task Scheduling System
+
+PT-BR:
+Este módulo implementa um sistema de agendamento de tarefas que funciona em Windows, 
+Linux e macOS. Fornece funcionalidades para criar, remover e listar tarefas agendadas,
+adaptando-se automaticamente ao sistema operacional em uso.
+
+EN:
+This module implements a task scheduling system that works on Windows, Linux, and macOS.
+Provides functionality to create, remove, and list scheduled tasks,
+automatically adapting to the operating system in use.
+"""
+
 import os
 import subprocess
 import platform
@@ -6,30 +20,88 @@ from datetime import datetime
 class TaskScheduled:
     @staticmethod
     def validate_python_script(python_script_path):
-        # Verifica se o script Python existe. Isso evita que o programa tente agendar uma tarefa para um arquivo inexistente.
+        """
+        PT-BR:
+        Verifica se o script Python especificado existe no sistema.
+        
+        Parâmetros:
+            python_script_path: Caminho do script a ser validado
+            
+        Raises:
+            FileNotFoundError: Se o script não for encontrado
+
+        EN:
+        Validates if the specified Python script exists in the system.
+        
+        Parameters:
+            python_script_path: Path to script to validate
+            
+        Raises:
+            FileNotFoundError: If script is not found
+        """
         if not os.path.exists(python_script_path):
-            raise FileNotFoundError(f"O script Python '{python_script_path}' não foi encontrado.")
+            raise FileNotFoundError(f"Script Python não encontrado / Python script not found: '{python_script_path}'")
 
     @staticmethod
     def get_python_executable():
-        """Obtém o caminho absoluto do executável Python.
-        Isso é importante para garantir que o script seja executado com o interpretador correto.
+        """
+        PT-BR:
+        Obtém o caminho absoluto do executável Python no sistema.
+        
+        Retorna:
+            str: Caminho do executável Python
+            
+        Raises:
+            EnvironmentError: Se não encontrar o Python
+
+        EN:
+        Gets the absolute path to Python executable in the system.
+        
+        Returns:
+            str: Python executable path
+            
+        Raises:
+            EnvironmentError: If Python is not found
         """
         try:
             if platform.system() == "Windows":
-                # 'where' é utilizado em Windows para localizar o executável
                 python_executable = subprocess.check_output(['where', 'python'], text=True).strip().split('\n')[0]
             else:
-                # 'which' é utilizado em sistemas baseados em Unix para localizar o python3
                 python_executable = subprocess.check_output(['which', 'python3'], text=True).strip()
             return os.path.abspath(python_executable)
         except Exception as e:
-            raise EnvironmentError("Não foi possível localizar o executável do Python no sistema.") from e
+            raise EnvironmentError("Python não encontrado no sistema / Python not found in system") from e
 
     @staticmethod
     def create_task(task_name, python_script_path, schedule_type='DAILY', date=None, time='22:00'):
-        """Cria uma tarefa agendada de acordo com o sistema operacional.
-        Para cada sistema, constrói o comando ou arquivo de configuração necessário.
+        """
+        PT-BR:
+        Cria uma tarefa agendada no sistema operacional.
+        
+        Parâmetros:
+            task_name: Nome da tarefa
+            python_script_path: Caminho do script Python
+            schedule_type: Tipo de agendamento ('DAILY' ou 'ONCE')
+            date: Data para execução única (formato: YYYY-MM-DD)
+            time: Horário de execução (formato: HH:MM)
+            
+        Raises:
+            NotImplementedError: Se o SO não for suportado
+            Exception: Para outros erros de agendamento
+
+        EN:
+        Creates a scheduled task in the operating system.
+        
+        Parameters:
+            task_name: Task name
+            python_script_path: Python script path
+            schedule_type: Schedule type ('DAILY' or 'ONCE')
+            date: Date for one-time execution (format: YYYY-MM-DD)
+            time: Execution time (format: HH:MM)
+            
+        Raises:
+            NotImplementedError: If OS is not supported
+            Exception: For other scheduling errors
         """
         TaskScheduled.validate_python_script(python_script_path)
 
@@ -37,11 +109,12 @@ class TaskScheduled:
         os_name = platform.system()
 
         if os_name == "Windows":
+            # Corrigindo o escape de caracteres para Windows
             command = [
                 'schtasks',
                 '/Create',
                 '/TN', task_name,
-                '/TR', f'"{python_executable}" "{python_script_path}" --task_name {task_name}',
+                '/TR', f'{python_executable} "{python_script_path}" --task_name {task_name}',
                 '/SC', schedule_type.upper(),
                 '/ST', time,
             ]
@@ -172,8 +245,26 @@ class TaskScheduled:
 
     @staticmethod
     def delete_task(task_name):
-        """Remove a tarefa agendada de acordo com o sistema operacional.
-        Cada sistema possui seu próprio método de remoção da tarefa.
+        """
+        PT-BR:
+        Remove uma tarefa agendada do sistema.
+        
+        Parâmetros:
+            task_name: Nome da tarefa a ser removida
+            
+        Raises:
+            NotImplementedError: Se o SO não for suportado
+            Exception: Para erros na remoção
+
+        EN:
+        Removes a scheduled task from the system.
+        
+        Parameters:
+            task_name: Name of task to remove
+            
+        Raises:
+            NotImplementedError: If OS is not supported
+            Exception: For removal errors
         """
         os_name = platform.system()
         if os_name == "Windows":
@@ -234,8 +325,20 @@ class TaskScheduled:
 
     @staticmethod
     def list_tasks():
-        """Lista todas as tarefas agendadas conforme o sistema operacional.
-        Essa função utiliza comandos específicos para cada ambiente.
+        """
+        PT-BR:
+        Lista todas as tarefas agendadas no sistema.
+        
+        Raises:
+            NotImplementedError: Se o SO não for suportado
+            Exception: Para erros na listagem
+
+        EN:
+        Lists all scheduled tasks in the system.
+        
+        Raises:
+            NotImplementedError: If OS is not supported
+            Exception: For listing errors
         """
         os_name = platform.system()
 
@@ -268,8 +371,26 @@ class TaskScheduled:
 
     @staticmethod
     def open_in_terminal(task_name, python_script_path):
-        """Abre uma nova janela do terminal para executar o script especificado.
-        Essa função utiliza comandos específicos para cada sistema operacional.
+        """
+        PT-BR:
+        Abre o script em uma nova janela do terminal.
+        
+        Parâmetros:
+            task_name: Nome da tarefa
+            python_script_path: Caminho do script Python
+            
+        Raises:
+            Exception: Para erros ao abrir o terminal
+
+        EN:
+        Opens the script in a new terminal window.
+        
+        Parameters:
+            task_name: Task name
+            python_script_path: Python script path
+            
+        Raises:
+            Exception: For terminal opening errors
         """
         python_executable = TaskScheduled.get_python_executable()
         command_line = f'"{python_executable}" "{python_script_path}" --task_name {task_name}'
