@@ -182,41 +182,35 @@ class GroupController:
         except Exception:
             return False
 
-    def update_summary(self, group_id, horario, enabled, is_links, is_names, script):
-        """Atualiza ou adiciona as configurações de resumo de um grupo e agenda a tarefa se necessário."""
+    def update_summary(self, group_id, horario, enabled, is_links, is_names, script, start_date=None, start_time=None, end_date=None, end_time=None):
+        """Atualiza o CSV com as novas configurações do resumo."""
         try:
-            df = self.load_summary_info()
-            if group_id in df["group_id"].values:
-                df.loc[df["group_id"] == group_id, ["horario", "enabled", "is_links", "is_names"]] = [
-                    horario, enabled, is_links, is_names
-                ]
-            else:
-                nova_linha = {
-                    "group_id": group_id,
-                    "horario": horario,
-                    "enabled": enabled,
-                    "is_links": is_links,
-                    "is_names": is_names
-                }
-                df = pd.concat([df, pd.DataFrame([nova_linha])], ignore_index=True)
-            task_name = f"ResumoGrupo_{group_id}"
-            try:
-                TaskScheduled.delete_task(task_name)
-            except Exception:
-                pass
-            if enabled:
-                python_script = os.path.join(script)
-                TaskScheduled.create_task(
-                    task_name,
-                    python_script,
-                    schedule_type='DAILY',
-                    time=horario
-                )
-            df.to_csv(self.csv_file, index=False)
-            return True
-        except Exception as e:
-            print(f"Erro ao salvar as configurações: {e}")
-            return False
+            df = pd.read_csv("group_summary.csv")
+        except FileNotFoundError:
+            df = pd.DataFrame(columns=["group_id", "horario", "enabled", "is_links", "is_names", "script", 
+                                     "start_date", "start_time", "end_date", "end_time"])
+        
+        # Remove qualquer entrada existente para o grupo
+        df = df[df['group_id'] != group_id]
+        
+        # Adiciona a nova configuração
+        nova_config = {
+            "group_id": group_id,
+            "horario": horario,
+            "enabled": enabled,
+            "is_links": is_links,
+            "is_names": is_names,
+            "script": script,
+            "start_date": start_date if start_date else None,
+            "start_time": start_time if start_time else None,
+            "end_date": end_date if end_date else None,
+            "end_time": end_time if end_time else None
+        }
+        
+        df = pd.concat([df, pd.DataFrame([nova_config])], ignore_index=True)
+        df.to_csv("group_summary.csv", index=False)
+        
+        return True
 
     def get_groups(self):
         """Retorna a lista de grupos processada."""

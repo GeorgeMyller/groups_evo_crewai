@@ -1,6 +1,7 @@
 import os  # Módulo para operações com o sistema operacional
 import streamlit as st  # Biblioteca para criar interfaces web interativas
-from datetime import time  # Classe para manipulação de horários
+from datetime import time, date, datetime  # Classes para manipulação de datas e horários
+import time as t  # Importação do módulo time para funções como sleep
 import pandas as pd  # Biblioteca para manipulação de dados em tabelas
 from dotenv import load_dotenv  # Biblioteca para carregar variáveis de ambiente de um arquivo .env
 
@@ -97,12 +98,20 @@ with col1:
             for _, row in scheduled_groups.iterrows():
                 group_id = row['group_id']
                 group_name = group_dict.get(group_id, "Nome não encontrado")
+                
+                # Determina a periodicidade
+                if row.get('start_date') and row.get('end_date'):
+                    periodicidade = "Uma vez"
+                else:
+                    periodicidade = "Diariamente"
+                    
                 scheduled_groups_info.append({
                     "id": group_id,
                     "name": group_name,
                     "horario": row['horario'],
                     "links": "Sim" if row['is_links'] else "Não",
-                    "names": "Sim" if row['is_names'] else "Não"
+                    "names": "Sim" if row['is_names'] else "Não",
+                    "periodicidade": periodicidade
                 })
             # Monta uma lista de opções com nome e horário para mostrar no seletor
             options = [f"{info['name']} - {info['horario']}" for info in scheduled_groups_info]
@@ -112,6 +121,7 @@ with col1:
                 # Exibe as informações do grupo agendado
                 st.write(f"**ID:** {selected_info['id']}")
                 st.write(f"**Horário:** {selected_info['horario']}")
+                st.write(f"**Periodicidade:** {selected_info['periodicidade']}")
                 st.write(f"**Links habilitados:** {selected_info['links']}")
                 st.write(f"**Nomes habilitados:** {selected_info['names']}")
                 # Botão para remover o agendamento; recarrega a página se a remoção for bem-sucedida
@@ -130,24 +140,95 @@ with col2:
         with st.expander("Configurações do Resumo", expanded=True):
             # Checkbox para ativar a geração do resumo
             enabled = st.checkbox("Habilitar Geração do Resumo", value=selected_group.enabled)
-            # Componente para selecionar o horário de execução do resumo; converte o valor para objeto time
-            horario = st.time_input("Horário de Execução do Resumo:", value=time.fromisoformat(selected_group.horario))
+            
+            # Adiciona seleção de periodicidade
+            periodicidade = st.selectbox(
+                "Periodicidade",
+                ["Diariamente", "Uma vez"],
+                index=0
+            )
+            
+            # Componente para selecionar o horário de execução do resumo
+            horario = None
+            if periodicidade == "Diariamente":
+                horario = st.time_input("Horário de Execução do Resumo:", value=time.fromisoformat(selected_group.horario))
+            
+            # Campos para data quando periodicidade for "Uma vez"
+            start_date = None
+            end_date = None
+            start_time = None
+            end_time = None
+            if periodicidade == "Uma vez":
+                col_start, col_end = st.columns(2)
+                with col_start:
+                    start_date = st.date_input("Data de Início:", value=date.today())
+                    start_time = st.time_input("Hora de Início:", value=time.fromisoformat("00:00"))
+                with col_end:
+                    end_date = st.date_input("Data Final:", value=date.today())
+                    end_time = st.time_input("Hora Final:", value=time.fromisoformat("23:59"))
+            
             # Opções para incluir links e nomes no resumo
             is_links = st.checkbox("Incluir Links no Resumo", value=selected_group.is_links)
             is_names = st.checkbox("Incluir Nomes no Resumo", value=selected_group.is_names)
             # Localiza o script que será executado para gerar o resumo
             python_script = os.path.join(os.path.dirname(__file__), "summary.py")
-            # Botão para salvar as novas configurações; atualiza o CSV e agenda a tarefa
+            
+            # Botão para salvar as novas configurações
             if st.button("Salvar Configurações"):
-                if control.update_summary(
-                    group_id=selected_group.group_id,
-                    horario=horario.strftime("%H:%M"),
-                    enabled=enabled,
-                    is_links=is_links,
-                    is_names=is_names,
-                    script=python_script
-                ):
-                    st.success("Configurações salvas com sucesso!")
-                    st.rerun()
-                else:
-                    st.error("Erro ao salvar as configurações. Tente novamente!")
+                task_name = f"ResumoGrupo_{selected_group.group_id}"
+                
+                try:
+                    # Preparar os parâmetros adicionais para resumo único
+                    additional_params = {}
+                    if periodicidade == "Uma vez":
+                        additional_params.update({
+                            'start_date': start_date.strftime("%Y-%m-%d"),
+                            'start_time': start_time.strftime("%H:%M"),
+                            'end_date': end_date.strftime("%Y-%m-%d"),
+                            'end_time': end_time.strftime("%H:%M")
+                        })
+                    
+                    if control.update_summary(
+                        group_id=selected_group.group_id,
+                        horario=horario.strftime("%H:%M") if horario else None,
+                        enabled=enabled,
+                        is_links=is_links,
+                        is_names=is_names,
+                        script=python_script,
+                        **additional_params
+                    ):
+                        if enabled:
+                            if periodicidade == "Diariamente":
+                                TaskScheduled.create_task(
+                                    task_name=task_name,
+                                    python_script_path=python_script,
+                                    schedule_type='DAILY',
+                                    time=horario.strftime("%H:%M")
+                                )
+                                st.success(f"Configurações salvas! O resumo será executado diariamente às {horario.strftime('%H:%M')}")
+                            else:  # Uma vez
+                                # Define o horário para o próximo minuto
+                                next_minute = datetime.now().replace(second=0, microsecond=0) + pd.Timedelta(minutes=1)
+                                
+                                TaskScheduled.create_task(
+                                    task_name=task_name,
+                                    python_script_path=python_script,
+                                    schedule_type='ONCE',
+                                    date=next_minute.strftime("%Y-%m-%d"),
+                                    time=next_minute.strftime("%H:%M")
+                                )
+                                st.success(f"Configurações salvas! O resumo será executado em {next_minute.strftime('%d/%m/%Y às %H:%M')}")
+                        else:
+                            try:
+                                TaskScheduled.delete_task(task_name)
+                            except Exception:
+                                pass
+                            st.success("Configurações salvas! Agendamento desativado.")
+                        
+                        t.sleep(2)
+                        st.rerun()
+                    else:
+                        st.error("Erro ao salvar as configurações. Tente novamente!")
+                except Exception as e:
+                    st.error(f"Erro ao configurar agendamento: {str(e)}")
+

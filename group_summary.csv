@@ -1,1 +1,1 @@
-group_id,horario,enabled,is_links,is_names
+group_id,horario,enabled,is_links,is_names,script,start_date,start_time,end_date,end_time

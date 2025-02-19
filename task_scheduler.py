@@ -1,7 +1,7 @@
 import os
 import subprocess
 import platform
-
+from datetime import datetime
 
 class TaskScheduled:
     @staticmethod
@@ -27,7 +27,7 @@ class TaskScheduled:
             raise EnvironmentError("Não foi possível localizar o executável do Python no sistema.") from e
 
     @staticmethod
-    def create_task(task_name, python_script_path, schedule_type='DAILY', time='22:00'):
+    def create_task(task_name, python_script_path, schedule_type='DAILY', date=None, time='22:00'):
         """Cria uma tarefa agendada de acordo com o sistema operacional.
         Para cada sistema, constrói o comando ou arquivo de configuração necessário.
         """
@@ -37,7 +37,6 @@ class TaskScheduled:
         os_name = platform.system()
 
         if os_name == "Windows":
-            # Em Windows, utiliza o comando 'schtasks' para criar a tarefa. O parâmetro /TR define a ação.
             command = [
                 'schtasks',
                 '/Create',
@@ -46,11 +45,17 @@ class TaskScheduled:
                 '/SC', schedule_type.upper(),
                 '/ST', time,
             ]
+            if schedule_type.upper() == 'ONCE' and date:
+                command.extend(['/SD', date])
         elif os_name == "Linux":
-            # Em Linux, adiciona uma entrada no crontab. O comando concatena entradas existentes com a nova.
-            command = f'(crontab -l 2>/dev/null ; echo "{time.split(":")[1]} {time.split(":")[0]} * * * {python_executable} {python_script_path} --task_name {task_name}") | crontab -'
+            if schedule_type.upper() == 'ONCE' and date:
+                hour, minute = time.split(':')
+                day, month, year = date.split('-')
+                command = f'(crontab -l 2>/dev/null ; echo "{minute} {hour} {day} {month} * {python_executable} {python_script_path} --task_name {task_name}") | crontab -'
+            else:
+                hour, minute = time.split(':')
+                command = f'(crontab -l 2>/dev/null ; echo "{minute} {hour} * * * {python_executable} {python_script_path} --task_name {task_name}") | crontab -'
         elif os_name == "Darwin":  
-            # Em macOS, cria um arquivo plist para agendar a tarefa pelo launchctl
             safe_task_name = task_name.replace('@', '_').replace('.', '_')
             plist_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -63,20 +68,47 @@ class TaskScheduled:
         <string>/usr/bin/osascript</string>
         <string>-e</string>
         <string>tell application "Terminal" to do script "{python_executable} {python_script_path} --task_name {task_name}" </string>
-        <string>{python_executable}</string>
-        <string>{python_script_path}</string>
-        <string>--task_name</string>
-        <string>{task_name}</string>
-    </array>
-    <key>StartCalendarInterval</key>
-    <dict>
-        <key>Hour</key>
-        <integer>{int(time.split(':')[0])}</integer>
-        <key>Minute</key>
-        <integer>{int(time.split(':')[1])}</integer>
-    </dict>
+    </array>"""
+
+            if schedule_type.upper() == 'ONCE' and date:
+                hour, minute = time.split(':')
+                # For immediate execution (next minute), we use RunAtLoad
+                current_date = datetime.now().strftime('%Y-%m-%d')
+                if date == current_date:
+                    plist_content += """
     <key>RunAtLoad</key>
-    <true/>
+    <true/>"""
+                else:
+                    plist_content += """
+    <key>StartCalendarInterval</key>
+    <dict>"""
+                    year, month, day = date.split('-')
+                    plist_content += f"""
+        <key>Year</key>
+        <integer>{year}</integer>
+        <key>Month</key>
+        <integer>{int(month)}</integer>
+        <key>Day</key>
+        <integer>{int(day)}</integer>
+        <key>Hour</key>
+        <integer>{int(hour)}</integer>
+        <key>Minute</key>
+        <integer>{int(minute)}</integer>
+    </dict>"""
+            else:
+                # For daily tasks
+                plist_content += """
+    <key>StartCalendarInterval</key>
+    <dict>"""
+                hour, minute = time.split(':')
+                plist_content += f"""
+        <key>Hour</key>
+        <integer>{int(hour)}</integer>
+        <key>Minute</key>
+        <integer>{int(minute)}</integer>
+    </dict>"""
+
+            plist_content += f"""
     <key>StandardOutPath</key>
     <string>/tmp/{safe_task_name}.out.log</string>
     <key>StandardErrorPath</key>
@@ -94,13 +126,11 @@ class TaskScheduled:
             plist_path = os.path.expanduser(f"~/Library/LaunchAgents/{safe_task_name}.plist")
             uid = os.getuid()
             domain_target = f"gui/{uid}"
-            # Procedimentos de remoção e criação do serviço são feitos para evitar conflitos
+
             try:
+                # Remove previous service if exists
                 try:
                     subprocess.run(["launchctl", "stop", safe_task_name], check=False)
-                except:
-                    pass
-                try:
                     subprocess.run(["launchctl", "remove", safe_task_name], check=False)
                 except:
                     pass
@@ -109,33 +139,13 @@ class TaskScheduled:
                 except FileNotFoundError:
                     pass
 
-                # Escreve o arquivo plist que define a tarefa
+                # Write plist file
                 with open(plist_path, "w") as plist_file:
                     plist_file.write(plist_content)
 
-                try:
-                    subprocess.run(["launchctl", "bootstrap", domain_target, plist_path], check=True)
-                except subprocess.CalledProcessError as e:
-                    print(f"Bootstrap failed: {e}. Falling back to launchctl load.")
-                    subprocess.run(["launchctl", "load", plist_path], check=True)
-
+                # Load and start service
+                subprocess.run(["launchctl", "bootstrap", domain_target, plist_path], check=True)
                 subprocess.run(["launchctl", "enable", f"{domain_target}/{safe_task_name}"], check=True)
-                try:
-                    subprocess.run(["launchctl", "kickstart", "-k", f"{domain_target}/{safe_task_name}"], check=True)
-                except subprocess.CalledProcessError as e:
-                    if e.returncode == 113:
-                        print(f"kickstart failed with code 113, falling back to launchctl start")
-                        try:
-                            subprocess.run(["launchctl", "start", safe_task_name], check=True)
-                        except subprocess.CalledProcessError as start_e:
-                            if start_e.returncode == 3:
-                                print(f"launchctl start failed with code 3, reloading service...")
-                                subprocess.run(["launchctl", "load", plist_path], check=True)
-                                subprocess.run(["launchctl", "start", safe_task_name], check=True)
-                            else:
-                                raise
-                    else:
-                        raise
                 
                 print(f"Service {task_name} configured and started successfully")
                 return True
@@ -145,7 +155,7 @@ class TaskScheduled:
                     os.remove(plist_path)
                 except:
                     pass
-                raise Exception(f"Falha ao configurar o serviço: {str(e)}")
+                raise Exception(f"Failed to configure service: {str(e)}")
         else:
             raise NotImplementedError("Sistema operacional não suportado para agendamento.")
 
@@ -266,6 +276,15 @@ class TaskScheduled:
         os_name = platform.system()
 
         try:
+            if os_name == "Windows":
+                # Abre o prompt do Windows e mantém a janela aberta
+                subprocess.Popen(f'start cmd /k {command_line}', shell=True)
+            elif os_name == "Linux":
+                # Abre o terminal do GNOME; se usar outro, ajuste aqui
+                subprocess.Popen(["gnome-terminal", "--", "bash", "-c", f'{command_line}; exec bash'])
+            elif os_name == "Darwin":
+                # Usa AppleScript para abrir o Terminal no macOS
+                subprocess.Popen(["osascript", "-e", f'tell application "Terminal" to do script "{command_line}"'])
             if os_name == "Windows":
                 # Abre o prompt do Windows e mantém a janela aberta
                 subprocess.Popen(f'start cmd /k {command_line}', shell=True)
