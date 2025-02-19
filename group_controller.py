@@ -11,38 +11,56 @@ from task_scheduler import TaskScheduled
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-load_dotenv()
-
 class GroupController:
     """Gerencia grupos, cache, consultas à API e agendamento de tarefas."""
     
     def __init__(self):
-        self.base_url = os.getenv("EVO_BASE_URL")
+        """Inicializa o controlador de grupos com configurações do ambiente."""
+        # Carrega .env do diretório do arquivo
+        env_path = os.path.join(os.path.dirname(__file__), '.env')
+        load_dotenv(env_path, override=True)
+        
+        # Carrega e valida a URL base
+        self.base_url = os.getenv("EVO_BASE_URL", 'http://localhost:8081')
         self.api_token = os.getenv("EVO_API_TOKEN")
         self.instance_id = os.getenv("EVO_INSTANCE_NAME")
         self.instance_token = os.getenv("EVO_INSTANCE_TOKEN")
+        
+        # Configura caminhos dos arquivos
         paths_this = os.path.dirname(__file__)
         self.csv_file = os.path.join(paths_this, "group_summary.csv")
         self.cache_file = os.path.join(paths_this, "groups_cache.json")
-        if not all([self.base_url, self.api_token, self.instance_id, self.instance_token]):
-            raise ValueError("Variáveis de ambiente necessárias não estão configuradas corretamente.")
+        
+        # Valida configurações necessárias
+        if not all([self.api_token, self.instance_id, self.instance_token]):
+            raise ValueError("API_TOKEN, INSTANCE_NAME ou INSTANCE_TOKEN não configurados.")
+            
+        print(f"Inicializando EvolutionClient com URL: {self.base_url}")
         self.client = EvolutionClient(base_url=self.base_url, api_token=self.api_token)
         self.groups = []
 
     def _load_cache(self):
         """Carrega dados do cache para evitar chamadas desnecessárias à API."""
+        if not os.path.exists(self.cache_file):
+            return None
         try:
-            if not os.path.exists(self.cache_file):
-                return None
             with open(self.cache_file, 'r') as f:
                 return json.load(f)
+        except json.decoder.JSONDecodeError as e:
+            print(f"Cache com formato inválido. Removendo o arquivo: {e}")
+            os.remove(self.cache_file)
+            return None
         except Exception as e:
             print(f"Erro ao carregar cache: {str(e)}")
             return None
 
     def _save_cache(self, groups_data):
-        """Salva dados dos grupos no cache com um timestamp."""
+        """Salva dados dos grupos no cache com um timestamp, garantindo que groups_data seja JSON serializável."""
         try:
+            # Verifica se groups_data é do tipo serializável (list ou dict), senão ajusta
+            if not isinstance(groups_data, (list, dict)):
+                print("groups_data não é serializável. Ajustando para lista vazia.")
+                groups_data = []
             cache_data = {
                 'timestamp': datetime.now().isoformat(),
                 'groups': groups_data
@@ -56,10 +74,18 @@ class GroupController:
         """Busca grupos diretamente da API com retries em caso de limite de requisições."""
         import time
         from evolutionapi.exceptions import EvolutionAPIError
+        
+        # Verifica se as configurações ainda estão válidas
+        if '<' in self.base_url or '>' in self.base_url:
+            print("URL inválida detectada, redefinindo para padrão...")
+            self.base_url = 'http://localhost:8081'
+            self.client = EvolutionClient(base_url=self.base_url, api_token=self.api_token)
+            
         max_retries = 3
         base_delay = 15
         for attempt in range(max_retries):
             try:
+                print(f"Tentativa {attempt + 1}: Fazendo requisição para {self.base_url}")
                 return self.client.group.fetch_all_groups(
                     instance_id=self.instance_id,
                     instance_token=self.instance_token,
@@ -71,6 +97,7 @@ class GroupController:
                     print(f"Rate limit atingido. Aguardando {wait_time} segundos...")
                     time.sleep(wait_time)
                 else:
+                    print(f"Erro na API: {str(e)}")
                     raise
         raise Exception("Não foi possível buscar os grupos após várias tentativas")
 
