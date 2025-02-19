@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # Groups Evolution CrewAI 👥💡
 
 ## Descrição do Projeto 🇧🇷 🚀
