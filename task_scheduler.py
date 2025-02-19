@@ -166,7 +166,6 @@ class TaskScheduled:
         Cada sistema possui seu próprio método de remoção da tarefa.
         """
         os_name = platform.system()
-
         if os_name == "Windows":
             command = [
                 'schtasks',
@@ -182,25 +181,31 @@ class TaskScheduled:
             plist_path = os.path.expanduser(f"~/Library/LaunchAgents/{safe_task_name}.plist")
             uid = os.getuid()
             domain_target = f"gui/{uid}"
+            
             try:
-                # Para macOS, primeiro desabilita e para o serviço
+                # Primeiro tenta parar o serviço
+                subprocess.run(["launchctl", "stop", safe_task_name], check=False)
+                
+                # Tenta remover o serviço do launchd
+                subprocess.run(["launchctl", "unload", plist_path], check=False)
+                subprocess.run(["launchctl", "remove", safe_task_name], check=False)
+                
+                # Remove o arquivo plist
                 try:
-                    subprocess.run(["launchctl", "disable", f"{domain_target}/{safe_task_name}"], check=False)
-                    subprocess.run(["launchctl", "bootout", domain_target, plist_path], check=False)
-                except:
-                    pass
-
-                try:
-                    os.remove(plist_path)
+                    if os.path.exists(plist_path):
+                        os.remove(plist_path)
                 except FileNotFoundError:
                     pass
-
+                except PermissionError:
+                    subprocess.run(["sudo", "rm", plist_path], check=False)
+                
                 print(f"Service {task_name} stopped and removed successfully")
                 return True
             except Exception as e:
                 print(f"Error removing service: {str(e)}")
                 try:
-                    os.remove(plist_path)
+                    if os.path.exists(plist_path):
+                        os.remove(plist_path)
                 except:
                     pass
                 raise Exception(f"Falha ao remover o serviço: {str(e)}")
@@ -208,7 +213,6 @@ class TaskScheduled:
             raise NotImplementedError("Sistema operacional não suportado para remoção de agendamento.")
 
         try:
-            # Executa o comando para remover a tarefa agendada
             if os_name == "Windows":
                 subprocess.run(command, check=True, text=True)
             elif os_name in ["Linux", "Darwin"]:
@@ -275,7 +279,7 @@ class TaskScheduled:
         except Exception as e:
             print(f"Erro ao abrir o terminal: {e}")
 
-
+'''
 if __name__ == "__main__":
     task_name = "MinhaTarefa"
     # Ajuste o caminho do script conforme necessário
@@ -305,4 +309,4 @@ if __name__ == "__main__":
     try:
         TaskScheduled.list_tasks()
     except Exception as e:
-        print(f"Erro ao listar as tarefas: {e}")
+        print(f"Erro ao listar as tarefas: {e}")'''
