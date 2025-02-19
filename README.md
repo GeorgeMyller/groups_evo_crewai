@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Groups Evolution CrewAI 👥💡
 
 ## Descrição do Projeto 🇧🇷 🚀
@@ -101,3 +102,6 @@ This project manage WhatsApp groups, generate message summaries, and send notifi
 
 ## How to Contribute 🤝🇺🇸
 If you want to contribute, fork this repository, create a new branch with your changes, and open a pull request for review.
+=======
+# groups_evo_crewai
+>>>>>>> de09f1804cd2cc86595c9cf6ff5c3350b0ad888d
