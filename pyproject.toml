@@ -1,0 +1,14 @@
+[project]
+name = "groups-evo-crewai"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12.7"
+dependencies = [
+    "crewai>=0.100.0",
+    "crewai-tools>=0.32.1",
+    "evolutionapi>=0.0.9",
+    "streamlit>=1.41.1",
+    "watchdog"
+]
+
