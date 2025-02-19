@@ -2,11 +2,17 @@ import os  # Módulo para operações com o sistema operacional
 import streamlit as st  # Biblioteca para criar interfaces web interativas
 from datetime import time  # Classe para manipulação de horários
 import pandas as pd  # Biblioteca para manipulação de dados em tabelas
+from dotenv import load_dotenv  # Biblioteca para carregar variáveis de ambiente de um arquivo .env
 
 # Importação de módulos do projeto
 from group_controller import GroupController  # Gerencia a comunicação com a API e cache dos grupos
 from groups_util import GroupUtils  # Contém funções auxiliares para manipulação dos dados dos grupos
 from task_scheduler import TaskScheduled  # Gerencia agendamentos de tarefas
+
+# Garante que o .env seja carregado do diretório correto
+env_path = os.path.join(os.path.dirname(__file__), '.env')
+print(f"Tentando carregar .env de: {env_path}")
+load_dotenv(env_path)
 
 # Instancia o controlador para lidar com grupos
 control = GroupController()  # Cria objeto para buscar e atualizar grupos através da API
