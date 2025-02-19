@@ -1,24 +1,24 @@
 # group.py
 
-class Group:  # Define a classe Group que representa um grupo com suas propriedades e configurações
-    def __init__(self,  # Método construtor que inicializa um novo objeto Group com os parâmetros fornecidos
-                 group_id,  # Parâmetro: ID único do grupo
-                 name,  # Parâmetro: Nome do grupo
-                 subject_owner,  # Parâmetro: Dono do assunto/título do grupo
-                 subject_time,  # Parâmetro: Timestamp da última alteração do título do grupo
-                 picture_url,  # Parâmetro: URL da imagem do grupo
-                 size,  # Parâmetro: Número de participantes do grupo
-                 creation,  # Parâmetro: Timestamp da criação do grupo
-                 owner,  # Parâmetro: Dono do grupo
-                 restrict,  # Parâmetro: Indica se o grupo possui restrições
-                 announce,  # Parâmetro: Indica se o grupo está em modo "somente administrador"
-                 is_community,  # Parâmetro: Indica se o grupo é uma comunidade
-                 is_community_announce,  # Parâmetro: Indica se o grupo é de anúncios de comunidade
-                 dias=1,  # Parâmetro opcional: Quantidade de dias para o resumo (padrão: 1)
-                 horario="22:00",  # Parâmetro opcional: Horário de execução do resumo (padrão: "22:00")
-                 enabled=False,  # Parâmetro opcional: Indica se o resumo está habilitado (padrão: False)
-                 is_links=False,  # Parâmetro opcional: Indica se links são incluídos no resumo (padrão: False)
-                 is_names=False):  # Parâmetro opcional: Indica se nomes são incluídos no resumo (padrão: False)
+class Group:
+    def __init__(self,
+                 group_id,
+                 name,
+                 subject_owner,
+                 subject_time,
+                 picture_url,
+                 size,
+                 creation,
+                 owner,
+                 restrict,
+                 announce,
+                 is_community,
+                 is_community_announce,
+                 dias=1,
+                 horario="22:00",
+                 enabled=False,
+                 is_links=False,
+                 is_names=False):
         """
         Inicializa um grupo com todas as propriedades relevantes e as configurações de resumo.
 
@@ -40,30 +40,30 @@ class Group:  # Define a classe Group que representa um grupo com suas proprieda
         :param is_links: Indica se links estão incluídos no resumo (valor padrão: False).
         :param is_names: Indica se nomes estão incluídos no resumo (valor padrão: False).
         """
-        self.group_id = group_id  # Atribui o ID único do grupo à propriedade do objeto
-        self.name = name  # Atribui o nome do grupo à propriedade do objeto
-        self.subject_owner = subject_owner  # Atribui o dono do assunto à propriedade do objeto
-        self.subject_time = subject_time  # Atribui o timestamp da última alteração do título à propriedade do objeto
-        self.picture_url = picture_url  # Atribui a URL da imagem à propriedade do objeto
-        self.size = size  # Atribui o tamanho (número de participantes) à propriedade do objeto
-        self.creation = creation  # Atribui o timestamp de criação do grupo à propriedade do objeto
-        self.owner = owner  # Atribui o dono do grupo à propriedade do objeto
-        self.restrict = restrict  # Atribui a flag de restrição do grupo à propriedade do objeto
-        self.announce = announce  # Atribui a flag de anúncio (modo somente administradores) à propriedade do objeto
-        self.is_community = is_community  # Atribui a indicação se o grupo é uma comunidade
-        self.is_community_announce = is_community_announce  # Atribui a indicação se o grupo é de anúncios de comunidade
+        self.group_id = group_id
+        self.name = name
+        self.subject_owner = subject_owner
+        self.subject_time = subject_time
+        self.picture_url = picture_url
+        self.size = size
+        self.creation = creation
+        self.owner = owner
+        self.restrict = restrict
+        self.announce = announce
+        self.is_community = is_community
+        self.is_community_announce = is_community_announce
 
         # Configurações de resumo
-        self.dias = dias  # Define a quantidade de dias considerada para a geração do resumo
-        self.horario = horario  # Define o horário em que o resumo deve ser executado
-        self.enabled = enabled  # Define se a geração do resumo está habilitada
-        self.is_links = is_links  # Define se o resumo deve incluir links
-        self.is_names = is_names  # Define se o resumo deve incluir nomes
+        self.dias = dias
+        self.horario = horario
+        self.enabled = enabled
+        self.is_links = is_links
+        self.is_names = is_names
 
-    def __repr__(self):  # Método especial que retorna uma representação em string do objeto Group
+    def __repr__(self):
         """
         Retorna uma representação legível do grupo.
         """
-        return (  # Utiliza uma f-string para formatar a saída com as propriedades principais do grupo
+        return (
             f"Group(id={self.group_id}, subject={self.name}, owner={self.owner}, size={self.size})"
         )

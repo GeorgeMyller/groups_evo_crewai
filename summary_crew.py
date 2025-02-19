@@ -1,5 +1,5 @@
-from dotenv import load_dotenv          # Importa a função load_dotenv para carregar variáveis de ambiente a partir do arquivo .env
-from crewai import Agent, Task, Crew, Process, LLM  # Importa classes necessárias do módulo crewai para gerenciar agente, tarefa, crew, processo e LLM
+from dotenv import load_dotenv
+from crewai import Agent, Task, Crew, Process, LLM
 
 class SummaryCrew:
     """
@@ -7,27 +7,23 @@ class SummaryCrew:
     """
 
     def __init__(self):
-        load_dotenv()                      # Carrega as variáveis de ambiente definidas no arquivo .env
-        self.llm = "gemini/gemini-2.0-flash" # Define o modelo LLM a ser utilizado para a geração de resumos
-        
-        self.create_crew()                 # Chama o método para configurar o agente, tarefa e crew
+        load_dotenv()
+        self.llm = "gemini/gemini-2.0-flash"
+        self.create_crew()
 
     def create_crew(self):
-        # Configurar o agente responsável por criar os resumos
         self.agent = Agent(
-            role="Assistente de Resumos",   # Define o papel do agente como assistente de resumos
-            goal="Criar resumos organizados e objetivos de mensagens de WhatsApp.",  
-                                             # Define o objetivo do agente: resumos claros e objetivos das mensagens
-            backstory=(                     # Define o contexto (backstory) do agente
+            role="Assistente de Resumos",
+            goal="Criar resumos organizados e objetivos de mensagens de WhatsApp.",
+            backstory=(
                 "Você é um assistente de IA especializado em analisar e organizar informações "
                 "extraídas de mensagens de WhatsApp, garantindo clareza e objetividade."
             ),
-            verbose=True,                   # Habilita saídas detalhadas para depuração
-            memory=False,                   # Desativa o uso de memória, pois não é necessário para essa tarefa simples
-            llm=self.llm                    # Configura o modelo LLM definido anteriormente para gerar os resumos
+            verbose=True,
+            memory=False,
+            llm=self.llm
         )
 
-        # Configurar a tarefa que o agente deve desempenhar
         self.task = Task(
             description=r"""
 Você é um assistente de IA especializado 
@@ -80,19 +76,18 @@ Mensagens do grupo para análise:
 <msgs>
 {msgs}
 </msgs>
-            """,  # Descrição detalhada da tarefa, contendo template e instruções para a criação do resumo
-            expected_output=(  
+            """,
+            expected_output=(
                 "Um resumo segmentado de acordo com o template fornecido, contendo apenas informações "
                 "relevantes extraídas das mensagens fornecidas."
-            ),  # Define a saída esperada da tarefa
-            agent=self.agent,             # Atribui o agente configurado para executar essa tarefa
+            ),
+            agent=self.agent,
         )
 
-        # Configurar o crew com os agentes e tarefas definidos, e o processo de execução
         self.crew = Crew(
-            agents=[self.agent],           # Lista de agentes que farão parte do crew; neste caso, apenas um agente
-            tasks=[self.task],             # Lista de tarefas a serem executadas pelo crew; neste caso, apenas uma tarefa
-            process=Process.sequential,    # Define que as tarefas serão processadas de forma sequencial
+            agents=[self.agent],
+            tasks=[self.task],
+            process=Process.sequential,
         )
 
     def kickoff(self, inputs):
@@ -105,5 +100,5 @@ Mensagens do grupo para análise:
         Returns:
             str: O resumo gerado no formato esperado.
         """
-        result = self.crew.kickoff(inputs=inputs).raw  # Executa a tarefa do crew com os inputs fornecidos e obtém o resultado bruto
-        return result  # Retorna o resumo gerado pelo processo
+        result = self.crew.kickoff(inputs=inputs).raw
+        return result

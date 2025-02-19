@@ -1,14 +1,14 @@
-# Groups Evolution CrewAI
+# Groups Evolution CrewAI 👥💡
 
-## Descrição do Projeto 🇧🇷
+## Descrição do Projeto 🇧🇷 🚀
 
-Este projeto utiliza a biblioteca UV para gerenciar grupos do WhatsApp, gerar resumos de mensagens e enviar notificações. Ele é composto por vários módulos que interagem com a API Evolution para buscar dados dos grupos, processar mensagens e agendar tarefas.
+Este projeto  gerencia grupos do WhatsApp, gera resumos de mensagens e envia notificações. Ele é composto por vários módulos que interagem com a API Evolution para buscar dados dos grupos, processar mensagens e agendar tarefas.
 
-### Funcionalidades Principais
-- **Gerenciamento de Grupos**: Busca e armazena informações dos grupos.
-- **Geração de Resumos**: Cria resumos diários das mensagens dos grupos.
-- **Envio de Mensagens**: Envia mensagens de texto, áudio, imagem, vídeo e documentos para os grupos.
-- **Agendamento de Tarefas**: Agendamento de tarefas para execução automática de scripts.
+### Funcionalidades Principais 🚀
+- **Gerenciamento de Grupos** 🗂: Busca e armazena informações dos grupos.
+- **Geração de Resumos** 📝: Cria resumos diários das mensagens dos grupos.
+- **Envio de Mensagens** 💬: Envia mensagens de texto, áudio, imagem, vídeo e documentos para os grupos.
+- **Agendamento de Tarefas** ⏰: Agendamento de tarefas para execução automática de scripts.
 
 ### Estrutura do Projeto
 - `app.py`: Interface principal usando Streamlit para interação com os grupos.
@@ -25,7 +25,10 @@ Este projeto utiliza a biblioteca UV para gerenciar grupos do WhatsApp, gerar re
 ### Como Executar
 1. **Instalar Dependências**:
     ```sh
-    pip install -r requirements.txt
+    uv venv
+    source .venv/bin/activate
+    uv lock
+    uv sync 
     ```
 
 2. **Configurar Variáveis de Ambiente**:
@@ -39,21 +42,24 @@ Este projeto utiliza a biblioteca UV para gerenciar grupos do WhatsApp, gerar re
 
 3. **Executar a Interface Principal**:
     ```sh
-    streamlit run app.py
+    uv run streamlit run app.py
     ```
 
 4. **Agendar Tarefas**:
     Utilize o módulo `task_scheduler.py` para criar, listar e deletar tarefas agendadas.
 
-## Project Description 🇺🇸
+## Como Contribuir 🤝🇧🇷
+Se quiser contribuir, faça um fork deste repositório, crie uma nova branch com suas modificações e abra um pull request para análise.
 
-This project uses the UV library to manage WhatsApp groups, generate message summaries, and send notifications. It consists of several modules that interact with the Evolution API to fetch group data, process messages, and schedule tasks.
+## Project Description 🇺🇸 🚀
 
-### Main Features
-- **Group Management**: Fetch and store group information.
-- **Summary Generation**: Create daily summaries of group messages.
-- **Message Sending**: Send text, audio, image, video, and document messages to groups.
-- **Task Scheduling**: Schedule tasks for automatic script execution.
+This project manage WhatsApp groups, generate message summaries, and send notifications. It consists of several modules that interact with the Evolution API to fetch group data, process messages, and schedule tasks.
+
+### Main Features 🚀
+- **Group Management** 🗂: Fetch and store group information.
+- **Summary Generation** 📝: Create daily summaries of group messages.
+- **Message Sending** 💬: Send text, audio, image, video, and document messages to groups.
+- **Task Scheduling** ⏰: Schedule tasks for automatic script execution.
 
 ### Project Structure
 - `app.py`: Main interface using Streamlit for group interaction.
@@ -70,7 +76,10 @@ This project uses the UV library to manage WhatsApp groups, generate message sum
 ### How to Run
 1. **Install Dependencies**:
     ```sh
-    pip install -r requirements.txt
+    uv venv
+    source .venv/bin/activate
+    uv lock
+    uv sync   
     ```
 
 2. **Set Environment Variables**:
@@ -84,8 +93,11 @@ This project uses the UV library to manage WhatsApp groups, generate message sum
 
 3. **Run the Main Interface**:
     ```sh
-    streamlit run app.py
+    uv run streamlit run app.py
     ```
 
 4. **Schedule Tasks**:
     Use the `task_scheduler.py` module to create, list, and delete scheduled tasks.
+
+## How to Contribute 🤝🇺🇸
+If you want to contribute, fork this repository, create a new branch with your changes, and open a pull request for review.
