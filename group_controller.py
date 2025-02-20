@@ -212,11 +212,16 @@ class GroupController:
                 enabled = resumo.get("enabled", False)
                 is_links = resumo.get("is_links", False)
                 is_names = resumo.get("is_names", False)
+                send_to_group = resumo.get("send_to_group", True)
+                send_to_personal = resumo.get("send_to_personal", False)
             else:
                 horario = "22:00"
                 enabled = False
                 is_links = False
                 is_names = False
+                send_to_group = True
+                send_to_personal = False
+
             self.groups.append(
                 Group(
                     group_id=group_id,
@@ -234,7 +239,9 @@ class GroupController:
                     horario=horario,
                     enabled=enabled,
                     is_links=is_links,
-                    is_names=is_names
+                    is_names=is_names,
+                    send_to_group=send_to_group,
+                    send_to_personal=send_to_personal
                 )
             )
         return self.groups
@@ -256,7 +263,11 @@ class GroupController:
         try:
             return pd.read_csv(self.csv_file)
         except FileNotFoundError:
-            return pd.DataFrame(columns=["group_id", "dias", "horario", "enabled", "is_links", "is_names"])
+            return pd.DataFrame(columns=[
+                "group_id", "dias", "horario", "enabled", 
+                "is_links", "is_names", "send_to_group", 
+                "send_to_personal"
+            ])
 
     def load_data_by_group(self, group_id):
         """
@@ -285,7 +296,7 @@ class GroupController:
         except Exception:
             return False
 
-    def update_summary(self, group_id, horario, enabled, is_links, is_names, script, start_date=None, start_time=None, end_date=None, end_time=None):
+    def update_summary(self, group_id, horario, enabled, is_links, is_names, script, send_to_group=True, send_to_personal=False, start_date=None, start_time=None, end_date=None, end_time=None):
         """
         PT-BR:
         Atualiza configurações de resumo de um grupo no CSV.
@@ -297,6 +308,8 @@ class GroupController:
             is_links: Incluir links
             is_names: Incluir nomes
             script: Caminho do script
+            send_to_group: Enviar para o grupo
+            send_to_personal: Enviar para número pessoal
             start_date: Data inicial (opcional)
             start_time: Hora inicial (opcional)
             end_date: Data final (opcional)
@@ -315,6 +328,8 @@ class GroupController:
             is_links: Include links
             is_names: Include names
             script: Script path
+            send_to_group: Send to group
+            send_to_personal: Send to personal number
             start_date: Start date (optional)
             start_time: Start time (optional)
             end_date: End date (optional)
@@ -327,6 +342,7 @@ class GroupController:
             df = pd.read_csv("group_summary.csv")
         except FileNotFoundError:
             df = pd.DataFrame(columns=["group_id", "horario", "enabled", "is_links", "is_names", "script", 
+                                     "send_to_group", "send_to_personal",
                                      "start_date", "start_time", "end_date", "end_time"])
         
         # Remove qualquer entrada existente para o grupo
@@ -340,6 +356,8 @@ class GroupController:
             "is_links": is_links,
             "is_names": is_names,
             "script": script,
+            "send_to_group": send_to_group,
+            "send_to_personal": send_to_personal,
             "start_date": start_date if start_date else None,
             "start_time": start_time if start_time else None,
             "end_date": end_date if end_date else None,

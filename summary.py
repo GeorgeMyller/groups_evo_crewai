@@ -17,9 +17,30 @@ import os
 import time
 import argparse
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
 from group_controller import GroupController
 from summary_crew import SummaryCrew
 from send_sandeco import SendSandeco
+
+# Load environment variables / Carrega variáveis de ambiente
+env_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(env_path)
+
+# Get WhatsApp number from environment / Obtém número do WhatsApp do ambiente
+personal_number = os.getenv("WHATSAPP_NUMBER")
+if personal_number:
+    # Garante que o número está no formato correto
+    personal_number = personal_number.strip()
+    if not personal_number.endswith('@s.whatsapp'):
+        personal_number = f"{personal_number}@s.whatsapp"
+
+print(f"\nConfigurações carregadas:")
+print(f"Número do WhatsApp: {personal_number}")
+print(f"Base URL: {os.getenv('EVO_BASE_URL')}")
+print(f"Instance Name: {os.getenv('EVO_INSTANCE_NAME')}")
+
+# Initialize SendSandeco / Inicializa SendSandeco
+evo_send = SendSandeco()
 
 # Command line argument initialization / Inicialização dos argumentos de linha de comando
 parser = argparse.ArgumentParser(description="Group Summary Generator / Gerador de Resumos de Grupo")
@@ -109,16 +130,33 @@ if df and df.get('enabled', False):
     summary_crew = SummaryCrew()
     resposta = summary_crew.kickoff(inputs=inputs)
 
-    # Send summary to group / Envio do resumo para o grupo
-    evo_send = SendSandeco()
-    evo_send.textMessage(group_id, resposta)
+    # Send summary based on configuration / Envia resumo com base na configuração
+    if df.get('send_to_group', True):
+        evo_send.textMessage(group_id, resposta)
+        print(f"Resumo enviado para o grupo: {nome}")
+
+    # Envia para o número pessoal se estiver definido
+    if personal_number:
+        try:
+            mensagem = f"Resumo do grupo {nome}:\n\n{resposta}"
+            evo_send.textMessage(personal_number, mensagem)
+            print(f"Resumo enviado para número pessoal: {personal_number}")
+        except Exception as e:
+            print(f"Erro ao enviar para número pessoal: {str(e)}")
 
     # Success logging / Registro de sucesso
     log_path = os.path.dirname(__file__)
     nome_arquivo = os.path.join(log_path, "log_summary.txt")
 
     with open(nome_arquivo, "a", encoding="utf-8") as arquivo:
-        log = f"[{data_atual}] [INFO] [GRUPO: {nome}] [GROUP_ID: {group_id}] - Mensagem: Resumo gerado e enviado com sucesso!"
+        destinations = []
+        if df.get('send_to_group', True):
+            destinations.append("grupo")
+        if personal_number:  # Atualizado aqui também
+            destinations.append("número pessoal")
+        
+        destinations_str = " e ".join(destinations)
+        log = f"[{data_atual}] [INFO] [GRUPO: {nome}] [GROUP_ID: {group_id}] - Mensagem: Resumo gerado e enviado com sucesso para {destinations_str}!"
         arquivo.write(log)
 else:
     print("Grupo não encontrado ou resumo não está habilitado para este grupo. / Group not found or summary is not enabled for this group.")

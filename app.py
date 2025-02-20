@@ -22,6 +22,7 @@ from dotenv import load_dotenv
 from group_controller import GroupController
 from groups_util import GroupUtils
 from task_scheduler import TaskScheduled
+from send_sandeco import SendSandeco
 
 # Environment setup / Configuração do ambiente
 env_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -33,6 +34,9 @@ control = GroupController()
 groups = control.fetch_groups()
 ut = GroupUtils()
 group_map, options = ut.map(groups)
+
+# Initialize SendSandeco / Inicializar SendSandeco
+sender = SendSandeco()
 
 # UI Layout / Layout da Interface
 col1, col2 = st.columns([1, 1])
@@ -209,6 +213,11 @@ with col2:
                                  value=selected_group.is_links)
             is_names = st.checkbox("Incluir Nomes no Resumo / Include Names in Summary", 
                                  value=selected_group.is_names)
+            
+            # New checkboxes for sending summary / Novas caixas de seleção para enviar o resumo
+            send_to_group = st.checkbox("Enviar Resumo para o Grupo / Send Summary to Group", value=True)
+            send_to_personal = st.checkbox("Enviar Resumo para o Meu Celular / Send Summary to My Phone", value=False)
+            
             python_script = os.path.join(os.path.dirname(__file__), "summary.py")
             
             # Save configuration button / Botão de salvar configurações
@@ -233,6 +242,8 @@ with col2:
                         enabled=enabled,
                         is_links=is_links,
                         is_names=is_names,
+                        send_to_group=send_to_group,
+                        send_to_personal=send_to_personal,
                         script=python_script,
                         **additional_params
                     ):
@@ -263,6 +274,15 @@ with col2:
                             except Exception:
                                 pass
                             st.success("Configurações salvas! Agendamento desativado. / Settings saved! Scheduling disabled.")
+                        
+                        # Send summary to personal number if selected / Enviar resumo para o número pessoal se selecionado
+                        if send_to_personal:
+                            personal_number = os.getenv('WHATSAPP_NUMBER')
+                            if personal_number:
+                                sender.textMessage(number=personal_number, msg="Resumo do grupo: ...")
+                                st.success("Resumo enviado para o seu número pessoal! / Summary sent to your personal number!")
+                            else:
+                                st.error("Número pessoal não configurado no .env / Personal number not set in .env")
                         
                         t.sleep(2)
                         st.rerun()

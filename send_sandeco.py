@@ -14,9 +14,13 @@ Provides an abstraction layer to facilitate API integration.
 
 import os
 import time
+import logging
 from dotenv import load_dotenv
 from evolutionapi.client import EvolutionClient
 from evolutionapi.models.message import TextMessage, MediaMessage
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class SendSandeco:
     """
@@ -37,9 +41,32 @@ class SendSandeco:
         self.evo_instance_token = os.getenv("EVO_INSTANCE_TOKEN")
         self.evo_base_url = os.getenv("EVO_BASE_URL")
 
+        if not all([self.evo_api_token, self.evo_instance_id, self.evo_instance_token, self.evo_base_url]):
+            raise EnvironmentError("Missing one or more required environment variables.")
+
         self.client = EvolutionClient(
             base_url=self.evo_base_url,
             api_token=self.evo_api_token
+        )
+
+    def _send_media(self, number, media_file, mediatype, mimetype, caption):
+        if not os.path.exists(media_file):
+            raise FileNotFoundError(f"Arquivo '{media_file}' não encontrado.")
+
+        media_message = MediaMessage(
+            number=number,
+            mediatype=mediatype,
+            mimetype=mimetype,
+            caption=caption,
+            fileName=os.path.basename(media_file),
+            media=""
+        )
+
+        self.client.messages.send_media(
+            self.evo_instance_id,
+            media_message,
+            self.evo_instance_token,
+            media_file
         )
 
     def textMessage(self, number, msg, mentions=[]):
@@ -48,38 +75,61 @@ class SendSandeco:
         Envia uma mensagem de texto para o número especificado.
         
         Argumentos:
-            number (str): Número/ID do destinatário
+            number (str): Número do destinatário (formato: código do país + DDD + número, ex: 5511999999999)
             msg (str): Conteúdo da mensagem
             mentions (list): Lista de menções na mensagem
             
         Retorna:
             dict: Resposta da API
-            
-        EN:
-        Sends a text message to the specified number.
-        
-        Args:
-            number (str): Recipient number/ID
-            msg (str): Message content
-            mentions (list): List of mentions in the message
-            
-        Returns:
-            dict: API response
         """
-        text_message = TextMessage(
-            number=str(number),
-            text=msg,
-            mentioned=mentions
-        )
+        try:
+            formatted_number = str(number)
+            
+            # Se não for um grupo e não tiver o sufixo whatsapp
+            if not formatted_number.endswith('@g.us') and not formatted_number.endswith('@s.whatsapp'):
+                # Remove quaisquer caracteres especiais
+                formatted_number = ''.join(filter(str.isdigit, formatted_number))
+                
+                # Garante que começa com o código do país
+                if not formatted_number.startswith('351'):
+                    formatted_number = '351' + formatted_number
+                
+                # Adiciona o sufixo whatsapp
+                formatted_number = f"{formatted_number}@s.whatsapp"
+            
+            logging.info(f"Número original: {number}")
+            logging.info(f"Número formatado: {formatted_number}")
+            logging.info(f"Mensagem: {msg[:100]}...")
+            logging.info(f"Instance ID: {self.evo_instance_id}")
+            logging.info(f"Base URL: {self.evo_base_url}")
+            
+            text_message = TextMessage(
+                number=formatted_number,
+                text=msg,
+                mentioned=mentions
+            )
 
-        time.sleep(10)
-
-        response = self.client.messages.send_text(
-            self.evo_instance_id,
-            text_message,
-            self.evo_instance_token
-        )
-        return response
+            # Pequeno delay antes do envio
+            time.sleep(3)
+            
+            logging.info("Enviando mensagem...")
+            try:
+                response = self.client.messages.send_text(
+                    self.evo_instance_id,
+                    text_message,
+                    self.evo_instance_token
+                )
+                logging.info(f"Resposta da API: {response}")
+                logging.info("Mensagem enviada com sucesso!")
+                return response
+            except Exception as api_error:
+                logging.error(f"Erro na API Evolution: {str(api_error)}")
+                logging.error(f"Detalhes da requisição: Instance ID: {self.evo_instance_id}, Token: {'*' * len(self.evo_instance_token)}")
+                raise api_error
+            
+        except Exception as e:
+            logging.error(f"Erro ao enviar mensagem: Número: {formatted_number}, Erro: {str(e)}")
+            raise Exception(f"Erro ao enviar mensagem: {str(e)}")
 
     def PDF(self, number, pdf_file, caption=""):
         """
@@ -105,24 +155,7 @@ class SendSandeco:
         Raises:
             FileNotFoundError: If file is not found
         """
-        if not os.path.exists(pdf_file):
-            raise FileNotFoundError(f"Arquivo '{pdf_file}' não encontrado.")
-        
-        media_message = MediaMessage(
-            number=number,
-            mediatype="document",
-            mimetype="application/pdf",
-            caption=caption,
-            fileName=os.path.basename(pdf_file),
-            media=""
-        )
-        
-        self.client.messages.send_media(
-            self.evo_instance_id,
-            media_message,
-            self.evo_instance_token,
-            pdf_file
-        )
+        self._send_media(number, pdf_file, "document", "application/pdf", caption)
 
     def audio(self, number, audio_file):
         """
@@ -152,24 +185,7 @@ class SendSandeco:
         Returns:
             str: Confirmation message
         """
-        if not os.path.exists(audio_file):
-            raise FileNotFoundError(f"Arquivo '{audio_file}' não encontrado.")
-
-        audio_message = {
-            "number": number,
-            "mediatype": "audio",
-            "mimetype": "audio/mpeg",
-            "caption": ""
-        }
-            
-        self.client.messages.send_whatsapp_audio(
-            self.evo_instance_id,
-            audio_message,
-            self.evo_instance_token,
-            audio_file
-        )
-                    
-        return "Áudio enviado"
+        self._send_media(number, audio_file, "audio", "audio/mpeg", "")
 
     def image(self, number, image_file, caption=""):
         """
@@ -201,26 +217,7 @@ class SendSandeco:
         Returns:
             str: Confirmation message
         """
-        if not os.path.exists(image_file):
-            raise FileNotFoundError(f"Arquivo '{image_file}' não encontrado.")
-
-        media_message = MediaMessage(
-            number=number,
-            mediatype="image",
-            mimetype="image/jpeg",
-            caption=caption,
-            fileName=os.path.basename(image_file),
-            media=""
-        )
-
-        self.client.messages.send_media(
-            self.evo_instance_id,
-            media_message,
-            self.evo_instance_token,
-            image_file
-        )
-        
-        return "Imagem enviada"
+        self._send_media(number, image_file, "image", "image/jpeg", caption)
 
     def video(self, number, video_file, caption=""):
         """
@@ -252,26 +249,7 @@ class SendSandeco:
         Returns:
             str: Confirmation message
         """
-        if not os.path.exists(video_file):
-            raise FileNotFoundError(f"Arquivo '{video_file}' não encontrado.")
-
-        media_message = MediaMessage(
-            number=number,
-            mediatype="video",
-            mimetype="video/mp4",
-            caption=caption,
-            fileName=os.path.basename(video_file),
-            media=""
-        )
-
-        self.client.messages.send_media(
-            self.evo_instance_id,
-            media_message,
-            self.evo_instance_token,
-            video_file
-        )
-        
-        return "Vídeo enviado"
+        self._send_media(number, video_file, "video", "video/mp4", caption)
 
     def document(self, number, document_file, caption=""):
         """
@@ -303,28 +281,17 @@ class SendSandeco:
         Returns:
             str: Confirmation message
         """
-        if not os.path.exists(document_file):
-            raise FileNotFoundError(f"Arquivo '{document_file}' não encontrado.")
+        self._send_media(number, document_file, "document", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", caption)
 
-        media_message = MediaMessage(
-            number=number,
-            mediatype="document",
-            mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            caption=caption,
-            fileName=os.path.basename(document_file),
-            media=""
-        )
+number = os.getenv('WHATSAPP_NUMBER')  # Get number from .env
 
-        self.client.messages.send_media(
-            self.evo_instance_id,
-            media_message,
-            self.evo_instance_token,
-            document_file
-        )
-        
-        return "Documento enviado"
+if not number:
+    raise EnvironmentError("Missing required environment variable: NUMBER")
 
-# Example usage / Exemplo de uso
 sender = SendSandeco()
-celular = "120363391798069472@g.us"  # Group ID example / Exemplo de ID de grupo
-sender.textMessage(number=celular, msg="teste de mensagem")
+
+celular = number
+
+sender.textMessage(number=celular,
+                  msg="teste de mensagem")
+logging.info("teste de mensagem")

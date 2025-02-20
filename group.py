@@ -28,7 +28,9 @@ class Group:
                  horario="22:00",
                  enabled=False,
                  is_links=False,
-                 is_names=False):
+                 is_names=False,
+                 send_to_group=True,
+                 send_to_personal=False):
         """
         PT-BR:
         Inicializa um grupo com suas propriedades e configurações de resumo.
@@ -51,6 +53,8 @@ class Group:
             enabled: Resumo ativado (padrão: False)
             is_links: Incluir links (padrão: False)
             is_names: Incluir nomes (padrão: False)
+            send_to_group: Enviar para o grupo (padrão: True)
+            send_to_personal: Enviar para pessoal (padrão: False)
 
         EN:
         Initializes a group with its properties and summary settings.
@@ -73,6 +77,8 @@ class Group:
             enabled: Summary enabled (default: False)
             is_links: Include links (default: False)
             is_names: Include names (default: False)
+            send_to_group: Send to group (default: True)
+            send_to_personal: Send to personal (default: False)
         """
         self.group_id = group_id
         self.name = name
@@ -92,6 +98,8 @@ class Group:
         self.enabled = enabled
         self.is_links = is_links
         self.is_names = is_names
+        self.send_to_group = send_to_group
+        self.send_to_personal = send_to_personal
 
     def __repr__(self):
         """
