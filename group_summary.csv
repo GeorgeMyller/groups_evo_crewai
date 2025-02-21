@@ -1,3 +1,1 @@
 group_id,horario,enabled,is_links,is_names,script,start_date,start_time,end_date,end_time,send_to_group,send_to_personal
-120363398170141701@g.us,,True,True,True,/Users/george/Desktop/Python2024Prog/groups_evo_crewai/summary.py,2025-02-20,00:00,2025-02-20,23:59,False,True
-120363383673368986@g.us,,True,True,True,/Users/george/Desktop/Python2024Prog/groups_evo_crewai/summary.py,2025-02-20,00:00,2025-02-20,23:59,True,True

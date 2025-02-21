@@ -10,5 +10,6 @@ dependencies = [
     "evolutionapi>=0.0.9",
     "streamlit>=1.41.1",
     "watchdog"
+    
 ]
 
